@@ -7,7 +7,9 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import androidx.customview.widget.ViewDragHelper
 import io.video.ijkplayer.listener.IJKGestureListener
+import io.video.ijkplayer.view.IJKPlayer
 import kotlin.math.absoluteValue
 
 
@@ -36,6 +38,18 @@ class GestureDetectorHelper(
     private var currentDelta = 0f
 
     private var enableScale = true
+
+    //滑动方向
+    private val DIRECTION_NONE = 0
+    private val DIRECTION_HORIZONTAL = 1
+    private val DIRECTION_VERTICAL = 2
+    private val DIRECTION_CUSTOM = 3
+    private var gestureDirection = DIRECTION_NONE
+
+    private var isScrollLeft = false
+    private var isScrollTop = false
+    private var isScrollRight = false
+    private var isScrollBottom = false
 
     private val scaleGestureDetector =
         ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -110,7 +124,7 @@ class GestureDetectorHelper(
                 }
 
                 override fun onScroll(
-                    e1: MotionEvent,
+                    e1: MotionEvent?,
                     e2: MotionEvent,
                     distanceX: Float,
                     distanceY: Float
@@ -128,7 +142,7 @@ class GestureDetectorHelper(
                 }
 
                 override fun onFling(
-                    e1: MotionEvent,
+                    e1: MotionEvent?,
                     e2: MotionEvent,
                     velocityX: Float,
                     velocityY: Float
@@ -164,6 +178,10 @@ class GestureDetectorHelper(
                     animateResetScale()
                 }
             }
+            when (event.actionMasked) {
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
+                    gestureDirection = DIRECTION_NONE
+            }
             gestureDetector?.onTouchEvent(event) ?: false
         }
     }
@@ -184,5 +202,81 @@ class GestureDetectorHelper(
     fun setScaleEnable(enable: Boolean) {
         this.enableScale = enable
     }
+
+
+    fun onScrollOperate(
+        e1: MotionEvent?,
+        e2: MotionEvent,
+        distanceX: Float,
+        distanceY: Float
+    ) {
+        if (e1 != null) {
+            val deltaX = e2.x - e1.x
+            val deltaY = e2.y - e1.y
+
+            val absDeltaX = deltaX.absoluteValue
+            val absDeltaY = deltaY.absoluteValue
+            val threshold = 5f // 最小滑动距离，避免误触
+
+            // 第一次滑动时锁定方向
+            if (gestureDirection == DIRECTION_NONE) {
+                gestureDirection = if (absDeltaX > threshold && absDeltaX > absDeltaY) {
+                    ViewDragHelper.DIRECTION_HORIZONTAL
+                } else if (absDeltaY > threshold && absDeltaY > absDeltaX) {
+                    ViewDragHelper.DIRECTION_VERTICAL
+                } else {
+                    DIRECTION_CUSTOM
+                }
+            }
+
+            // 已锁定方向后的处理
+            if (gestureDirection == ViewDragHelper.DIRECTION_HORIZONTAL) {
+                if (deltaX > 0) {
+                    isScrollLeft = false
+                    isScrollTop = false
+                    isScrollBottom = false
+                    //右
+                    isScrollRight = true
+
+                } else {
+                    isScrollTop = false
+                    isScrollBottom = false
+                    isScrollRight = false
+                    //左
+                    isScrollLeft = true
+
+                }
+            } else if (gestureDirection == ViewDragHelper.DIRECTION_VERTICAL) {
+                if (deltaY > 0) {
+                    isScrollTop = false
+                    isScrollLeft = false
+                    isScrollRight = false
+                    //下
+                    isScrollBottom = true
+                } else {
+                    isScrollLeft = false
+                    isScrollRight = false
+                    isScrollBottom = false
+                    //上
+                    isScrollTop = true
+                }
+            } else {
+                isScrollLeft = false
+                isScrollRight = false
+                isScrollBottom = false
+                isScrollTop = false
+            }
+        } else {
+            isScrollLeft = false
+            isScrollRight = false
+            isScrollBottom = false
+            isScrollTop = false
+        }
+    }
+
+    fun isScrollLeft() = this.isScrollLeft
+    fun isScrollTop() = this.isScrollTop
+    fun isScrollRight() = this.isScrollRight
+    fun isScrollBottom() = this.isScrollBottom
 
 }

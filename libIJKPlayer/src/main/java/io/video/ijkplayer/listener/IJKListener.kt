@@ -6,6 +6,7 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.Surface
 import android.view.View
+import io.video.ijkplayer.scaletype.IJKScaleType
 
 
 /**

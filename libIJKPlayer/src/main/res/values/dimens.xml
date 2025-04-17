@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <dimen name="ijk_dp1">1dp</dimen>
     <dimen name="ijk_dp3">3dp</dimen>
     <dimen name="ijk_dp4">4dp</dimen>
     <dimen name="ijk_dp5">5dp</dimen>
@@ -15,6 +16,8 @@
     <dimen name="ijk_dp15">15dp</dimen>
     <dimen name="ijk_dp20">20dp</dimen>
     <dimen name="ijk_dp25">25dp</dimen>
+    <dimen name="ijk_dp27">27dp</dimen>
+    <dimen name="ijk_dp30">30dp</dimen>
     <dimen name="ijk_dp40">40dp</dimen>
     <dimen name="ijk_dp42">42dp</dimen>
     <dimen name="ijk_dp44">44dp</dimen>

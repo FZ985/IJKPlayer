@@ -23,20 +23,20 @@ import android.widget.FrameLayout
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import cn.androidx.ijkplayer.IJKModel
-import cn.androidx.ijkplayer.controller.ControllerCase
-import cn.androidx.ijkplayer.databinding.IjkPlayerViewBinding
-import cn.androidx.ijkplayer.helper.GestureDetectorHelper
-import cn.androidx.ijkplayer.listener.IJKGestureListener
-import cn.androidx.ijkplayer.listener.IJKRenderView
-import cn.androidx.ijkplayer.listener.IJKShotListener
-import cn.androidx.ijkplayer.listener.OnSurfaceListener
-import cn.androidx.ijkplayer.scaletype.IJKScaleType
-import cn.androidx.ijkplayer.utils.IjkUtils
+import io.video.ijkplayer.IJKModel
+import io.video.ijkplayer.controller.ControllerCase
+import io.video.ijkplayer.databinding.IjkPlayerViewBinding
+import io.video.ijkplayer.helper.GestureDetectorHelper
+import io.video.ijkplayer.listener.IJKGestureListener
+import io.video.ijkplayer.listener.IJKRenderView
+import io.video.ijkplayer.listener.IJKShotListener
+import io.video.ijkplayer.listener.OnSurfaceListener
+import io.video.ijkplayer.scaletype.IJKScaleType
+import io.video.ijkplayer.utils.IJKState
+import io.video.ijkplayer.utils.IjkUtils
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
 import java.lang.reflect.InvocationTargetException
 import java.util.LinkedList
-import kotlin.math.absoluteValue
 
 
 /**
@@ -77,13 +77,8 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
     private var isStop = false
     private var isPrepared = false
     private var isFullScreen = false
+    private var isError = false
 
-    //滑动方向
-    private val DIRECTION_NONE = 0
-    private val DIRECTION_HORIZONTAL = 1
-    private val DIRECTION_VERTICAL = 2
-    private val DIRECTION_CUSTOM = 3
-    private var gestureDirection = DIRECTION_NONE
 
     private var gestureHelper: GestureDetectorHelper? = null
 
@@ -95,13 +90,15 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
 
     //保存系统状态ui
     private var mSystemUiVisibility = 0
+
     //是否隐藏虚拟按键
     private var enableNavKey = true
+
     //是否隐藏状态栏
     private var enableStatusBar = true
+
     //是否是竖屏全屏
     private var isPortraitFullscreen = false
-
 
     //渲染组件类型
     private var renderType = TEXTURE
@@ -140,7 +137,12 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
 
         binding = IjkPlayerViewBinding.inflate(LayoutInflater.from(context), this, true)
         setRenderType(renderType)
-        this.onConfigurationChanged(resources.configuration)
+        isFullScreen =
+            if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {// 竖屏
+                false
+            } else {// 横屏
+                resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            }
         controllerList.forEach { it.reset() }
         controllerList.clear()
 
@@ -225,7 +227,8 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
         }
 
         mediaPlayer.setOnErrorListener { mp, what, extra ->
-            controllerList.forEach { it.onError(mp, what, extra) }
+            isError = true
+            controllerList.forEach { it.onError(mp, what, extra, Exception("null")) }
             true
         }
 
@@ -262,103 +265,24 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
                 }
 
                 override fun onScroll(
-                    e1: MotionEvent,
+                    e1: MotionEvent?,
                     e2: MotionEvent,
                     distanceX: Float,
                     distanceY: Float
                 ): Boolean {
-                    val deltaX = e2.x - e1.x
-                    val deltaY = e2.y - e1.y
+                    gestureHelper?.onScrollOperate(e1, e2, distanceX, distanceY)
 
-                    val absDeltaX = deltaX.absoluteValue
-                    val absDeltaY = deltaY.absoluteValue
-                    val threshold = 5f // 最小滑动距离，避免误触
-
-                    // 第一次滑动时锁定方向
-                    if (gestureDirection == DIRECTION_NONE) {
-                        gestureDirection = if (absDeltaX > threshold && absDeltaX > absDeltaY) {
-                            DIRECTION_HORIZONTAL
-                        } else if (absDeltaY > threshold && absDeltaY > absDeltaX) {
-                            DIRECTION_VERTICAL
-                        } else {
-                            DIRECTION_CUSTOM
-                        }
-                    }
-
-                    // 已锁定方向后的处理
-                    if (gestureDirection == DIRECTION_HORIZONTAL) {
-                        if (deltaX > 0) {
-                            //右
-                            controllerList.forEach {
-                                it.onScroll(
-                                    e1,
-                                    e2,
-                                    distanceX,
-                                    distanceY,
-                                    false,
-                                    true,
-                                    false,
-                                    false
-                                )
-                            }
-                        } else {
-                            //左
-                            controllerList.forEach {
-                                it.onScroll(
-                                    e1,
-                                    e2,
-                                    distanceX,
-                                    distanceY,
-                                    true,
-                                    false,
-                                    false,
-                                    false
-                                )
-                            }
-                        }
-                    } else if (gestureDirection == DIRECTION_VERTICAL) {
-                        if (deltaY > 0) {
-                            //下
-                            controllerList.forEach {
-                                it.onScroll(
-                                    e1,
-                                    e2,
-                                    distanceX,
-                                    distanceY,
-                                    false,
-                                    false,
-                                    false,
-                                    true
-                                )
-                            }
-                        } else {
-                            //上
-                            controllerList.forEach {
-                                it.onScroll(
-                                    e1,
-                                    e2,
-                                    distanceX,
-                                    distanceY,
-                                    false,
-                                    false,
-                                    true,
-                                    false
-                                )
-                            }
-                        }
-                    } else {
-                        controllerList.forEach {
-                            it.onScroll(
-                                e1,
-                                e2,
-                                distanceX,
-                                distanceY,
-                                false,
-                                false,
-                                false,
-                                false
-                            )
-                        }
+                    controllerList.forEach {
+                        it.onScroll(
+                            e1,
+                            e2,
+                            distanceX,
+                            distanceY,
+                            gestureHelper?.isScrollLeft() ?: false,
+                            gestureHelper?.isScrollRight() ?: false,
+                            gestureHelper?.isScrollTop() ?: false,
+                            gestureHelper?.isScrollBottom() ?: false
+                        )
                     }
                     return true
                 }
@@ -368,7 +292,7 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
                 }
 
                 override fun onFling(
-                    e1: MotionEvent,
+                    e1: MotionEvent?,
                     e2: MotionEvent,
                     velocityX: Float,
                     velocityY: Float
@@ -388,10 +312,6 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
                 }
 
                 override fun onTouchEvent(e: MotionEvent) {
-                    when (e.actionMasked) {
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
-                            gestureDirection = DIRECTION_NONE
-                    }
                     controllerList.forEach { it.onTouchEvent(e) }
                 }
 
@@ -401,9 +321,10 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
             })
     }
 
-    fun starAfterPrepared() {
+    fun starPrepared() {
         if (mediaPlayer.isPlaying) return
         handlerPost {
+            controllerList.forEach { it.onVideoStartBefore() }
             mediaPlayer.reset()
             if (!TextUtils.isEmpty(dataSource.getUrl())) {
                 mediaPlayer.dataSource = dataSource.getUrl()
@@ -412,6 +333,7 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
                 isComplete = false
                 isStop = false
                 isPause = false
+                isError = false
                 controllerList.forEach { it.onVideoStart() }
             }
         }
@@ -423,6 +345,7 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
             isPause = false
             isStop = false
             isComplete = false
+            isError = false
             controllerList.forEach { it.onVideoPlay() }
         }
     }
@@ -495,7 +418,7 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
             }
 
             //切换到横屏
-            if (!isPortraitFullscreen) {
+            if (!isPortraitFullscreen && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
                 IjkUtils.getActivity(context)?.requestedOrientation =
                     ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             }
@@ -508,36 +431,40 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
     @SuppressLint("SourceLockedOrientationActivity")
     fun exitFullScreen() {
         if (isFullScreen) {
-
+            isFullScreen = false
             //显示导航栏
-            if (enableNavKey) {
-                IjkUtils.showNavKey(context, mSystemUiVisibility)
-            }
-
             handlerPost("exitFullScreen", 100L) {
-                val vg =
-                    IjkUtils.getActivity(context)!!.window.decorView.findViewById<FrameLayout>(
-                        android.R.id.content
-                    ) as ViewGroup
-                vg.removeView(this)
+                if (CONTAINER_LIST.size > 0) {
+                    if (enableNavKey) {
+                        IjkUtils.showNavKey(context, mSystemUiVisibility)
+                    }
+                    val vg =
+                        IjkUtils.getActivity(context)!!.window.decorView.findViewById<FrameLayout>(
+                            android.R.id.content
+                        ) as ViewGroup
+                    vg.removeView(this)
+                    CONTAINER_LIST.last.removeViewAt(blockIndex)
+                    CONTAINER_LIST.last.addView(this, blockIndex, blockLayoutParams)
+                    CONTAINER_LIST.pop()
 
-                CONTAINER_LIST.last.removeViewAt(blockIndex)
-                CONTAINER_LIST.last.addView(this, blockIndex, blockLayoutParams)
-                CONTAINER_LIST.pop()
+                    //切换到竖屏
+                    if (!isPortraitFullscreen && resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                        try {
+                            IjkUtils.getActivity(context)!!.requestedOrientation =
+                                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                        } catch (e: Exception) {
+                            log("切换竖屏error：$e")
+                        }
+                    }
 
-                //切换到竖屏
-                if (!isPortraitFullscreen) {
-                    IjkUtils.getActivity(context)!!.requestedOrientation =
-                        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                    //显示状态栏
+                    if (enableStatusBar) {
+                        IjkUtils.getActivity(context)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+                    }
+
+                    isFullScreen = false
+                    controllerList.forEach { it.onExitFullScreen() }
                 }
-
-                //显示状态栏
-                if (enableStatusBar) {
-                    IjkUtils.getActivity(context)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-                }
-
-                isFullScreen = false
-                controllerList.forEach { it.onExitFullScreen() }
             }
         }
     }
@@ -563,10 +490,13 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
-        isFullScreen = if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {// 竖屏
-            false
-        } else {// 横屏
-            newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE
+        if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {// 竖屏
+            if (isFullScreen) exitFullScreen()
+        } else if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {// 横屏
+            if (!isFullScreen) {
+                mSystemUiVisibility =
+                    IjkUtils.getActivity(context)!!.window.decorView.systemUiVisibility
+            }
         }
     }
 
@@ -577,6 +507,15 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
                     runnable.run()
                 } catch (e: Exception) {
                     log("$tag:${e.message}")
+                    isError = true
+                    controllerList.forEach {
+                        it.onError(
+                            mediaPlayer,
+                            IJKState.error_exception,
+                            IJKState.error_exception,
+                            e
+                        )
+                    }
                 }
             }
         } else {
@@ -585,6 +524,15 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
                     runnable.run()
                 } catch (e: Exception) {
                     log("$tag:${e.message}")
+                    isError = true
+                    controllerList.forEach {
+                        it.onError(
+                            mediaPlayer,
+                            IJKState.error_exception,
+                            IJKState.error_exception,
+                            e
+                        )
+                    }
                 }
             }, duration)
         }
@@ -604,6 +552,7 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
         isComplete = false
         isPause = false
         isStop = false
+        isError = false
     }
 
     fun shake() {
@@ -642,8 +591,10 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
         return dataSource
     }
 
-    fun getController(caseId: Int): ControllerCase? {
-        return controllerList.firstOrNull { it.getId() == caseId }
+    @Suppress("UNCHECKED_CAST")
+    fun <T : ControllerCase?> getController(caseId: Int): T? {
+        val controller = controllerList.find { it.getId() == caseId }
+        return controller as T
     }
 
     fun getRenderType(): Int {
@@ -695,6 +646,10 @@ open class IJKPlayer : ConstraintLayout, IJKRenderView {
 
     fun isVideoStop(): Boolean {
         return isStop
+    }
+
+    fun isVideoError(): Boolean {
+        return isError
     }
 
     fun setDataSource(url: String) {

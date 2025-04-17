@@ -36,4 +36,11 @@ dependencies {
     implementation libs.androidx.core.ktx
     implementation libs.androidx.appcompat
     implementation libs.material
+    implementation libs.androidx.constraintlayout
+
+    //ijk
+    api 'com.github.CarGuo.GSYVideoPlayer:gsyvideoplayer-java:v10.1.0'
+    //根据你的需求ijk模式的so
+    api 'com.github.CarGuo.GSYVideoPlayer:gsyvideoplayer-armv7a:v10.1.0'
+    api 'com.github.CarGuo.GSYVideoPlayer:gsyvideoplayer-arm64:v10.1.0'
 }
