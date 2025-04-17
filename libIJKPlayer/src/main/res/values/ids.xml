@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="player_root" type="id" />
+    <item name="player_render" type="id" />
+    <item name="player_render_layer" type="id" />
+    <item name="player_controller" type="id" />
+    <item name="player_ges_layer" type="id" />
+</resources>

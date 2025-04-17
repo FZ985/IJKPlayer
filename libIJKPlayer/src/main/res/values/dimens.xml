@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="ijk_dp3">3dp</dimen>
+    <dimen name="ijk_dp4">4dp</dimen>
+    <dimen name="ijk_dp5">5dp</dimen>
+    <dimen name="ijk_dp6">6dp</dimen>
+    <dimen name="ijk_dp7">7dp</dimen>
+    <dimen name="ijk_dp8">8dp</dimen>
+    <dimen name="ijk_dp9">9dp</dimen>
+    <dimen name="ijk_dp10">10dp</dimen>
+    <dimen name="ijk_dp11">11dp</dimen>
+    <dimen name="ijk_dp12">12dp</dimen>
+    <dimen name="ijk_dp13">13dp</dimen>
+    <dimen name="ijk_dp14">14dp</dimen>
+    <dimen name="ijk_dp15">15dp</dimen>
+    <dimen name="ijk_dp20">20dp</dimen>
+    <dimen name="ijk_dp25">25dp</dimen>
+    <dimen name="ijk_dp40">40dp</dimen>
+    <dimen name="ijk_dp42">42dp</dimen>
+    <dimen name="ijk_dp44">44dp</dimen>
+    <dimen name="ijk_dp45">45dp</dimen>
+    <dimen name="ijk_dp50">50dp</dimen>
+    <dimen name="ijk_dp55">55dp</dimen>
+    <dimen name="ijk_player_default_height">230dp</dimen>
+</resources>
