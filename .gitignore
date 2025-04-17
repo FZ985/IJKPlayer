@@ -11,6 +11,7 @@
 /.idea/migrations.xml
 /.idea/misc.xml
 /.idea/runConfigurations.xml
+/.idea/gradle.xml
 /.idea/codeStyles
 .DS_Store
 /build
