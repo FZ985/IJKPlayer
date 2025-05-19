@@ -10,7 +10,6 @@ import android.view.PixelCopy
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
-import androidx.core.graphics.createBitmap
 import io.video.ijkplayer.listener.IJKMeasureListener
 import io.video.ijkplayer.listener.IJKRenderView
 import io.video.ijkplayer.listener.IJKShotListener
@@ -119,9 +118,9 @@ class IJKSurfaceView(context: Context, surfaceListener: OnSurfaceListener) : Sur
 
     override fun initCover(isHigh: Boolean): Bitmap {
         return if (isHigh) {
-            createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         } else {
-            createBitmap(width, height, Bitmap.Config.RGB_565)
+            Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
         }
     }
 
